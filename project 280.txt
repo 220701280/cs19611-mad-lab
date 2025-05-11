@@ -1,0 +1,88 @@
+package com.example.todolistapp
+
+import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
+import android.widget.TextView
+import android.widget.Spinner
+import android.widget.ArrayAdapter
+import android.app.DatePickerDialog
+import java.util.Calendar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var editTask: EditText
+    private lateinit var btnAdd: Button
+    private lateinit var recyclerTasks: RecyclerView
+    private lateinit var taskAdapter: TaskAdapter
+    private val tasks = mutableListOf<Task>()
+
+    private lateinit var spinnerPriority: Spinner
+    private lateinit var btnPickDate: Button
+    private lateinit var tvSelectedDate: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        // Initialize views
+        editTask = findViewById(R.id.editTask)
+        btnAdd = findViewById(R.id.btnAdd)
+        recyclerTasks = findViewById(R.id.recyclerTasks)
+        spinnerPriority = findViewById(R.id.spinnerPriority)
+        btnPickDate = findViewById(R.id.btnPickDate)
+        tvSelectedDate = findViewById(R.id.tvSelectedDate)
+
+        // Set up RecyclerView adapter
+        taskAdapter = TaskAdapter(tasks)
+        recyclerTasks.adapter = taskAdapter
+        recyclerTasks.layoutManager = LinearLayoutManager(this)
+
+        // Priority spinner setup
+        val priorityList = listOf("High", "Medium", "Low")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, priorityList)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerPriority.adapter = adapter
+
+        // Add Task Button Logic
+        btnAdd.setOnClickListener {
+            val taskName = editTask.text.toString()
+            val priority = spinnerPriority.selectedItem.toString()
+            val dueDate = tvSelectedDate.text.toString()
+
+            if (taskName.isNotEmpty()) {
+                val task = Task(taskName, dueDate, priority)
+                tasks.add(task)
+                taskAdapter.notifyItemInserted(tasks.size - 1)
+                editTask.text.clear()
+            }
+        }
+
+        // Date Picker Logic
+        btnPickDate.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            // Create and show DatePickerDialog
+            val datePicker = DatePickerDialog(this, { _, y, m, d ->
+                val selectedDate = "$d/${m + 1}/$y"
+                tvSelectedDate.text = selectedDate // Update the TextView with the selected date
+
+                // If needed, update the date in the last task added
+                if (tasks.isNotEmpty()) {
+                    val lastTask = tasks[tasks.size - 1]
+                    tasks[tasks.size - 1] = lastTask.copy(dueDate = selectedDate)
+                    taskAdapter.notifyItemChanged(tasks.size - 1) // Update the RecyclerView
+                }
+            }, year, month, day)
+
+            datePicker.show()
+        }
+    }
+}
